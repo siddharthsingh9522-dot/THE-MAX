@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Settings · {{ app_name }}{% endblock %}
+{% block page_title %}Settings{% endblock %}
+{% block content %}
+<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));max-width:900px">
+  <form class="card" method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="form" value="profile">
+    <h3 style="margin-bottom:.9rem">Profile</h3>
+    <label class="field">Email<input type="email" value="{{ u.email }}" disabled></label>
+    <label class="field">Full name<input type="text" name="name" value="{{ u.name }}" required maxlength="60"></label>
+    <button class="btn" type="submit">Save</button>
+  </form>
+  <form class="card" method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="form" value="password">
+    <h3 style="margin-bottom:.9rem">Change password</h3>
+    <label class="field">Current password<input type="password" name="current" required autocomplete="current-password"></label>
+    <label class="field">New password (min 8)<input type="password" name="new" required minlength="8" autocomplete="new-password"></label>
+    <label class="field">Confirm new password<input type="password" name="confirm" required minlength="8" autocomplete="new-password"></label>
+    <button class="btn" type="submit">Update password</button>
+  </form>
+</div>
+{% endblock %}
