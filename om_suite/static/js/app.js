@@ -28,5 +28,26 @@
     document.querySelectorAll('.flash.ok').forEach(function (f) { f.style.display = 'none'; });
   }, 6000);
 
+  // same-origin fetch() POST/PUT/DELETE automatically carries the CSRF token
+  var csrfMeta = document.querySelector('meta[name="csrf-token"]');
+  if (csrfMeta && window.fetch) {
+    var origFetch = window.fetch;
+    window.fetch = function (input, init) {
+      init = init || {};
+      var method = String(init.method || (typeof input !== 'string' && input.method) || 'GET').toUpperCase();
+      if (method !== 'GET' && method !== 'HEAD') {
+        try {
+          var u = new URL(typeof input === 'string' ? input : input.url, location.href);
+          if (u.origin === location.origin) {
+            var h = new Headers(init.headers || (typeof input !== 'string' ? input.headers : undefined) || {});
+            h.set('X-CSRF-Token', csrfMeta.content);
+            init.headers = h;
+          }
+        } catch (e) { /* ignore */ }
+      }
+      return origFetch.call(this, input, init);
+    };
+  }
+
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(function () {});
 })();

@@ -52,6 +52,14 @@ class Config:
     FIRESTORE_PREFIX = os.environ.get("FIRESTORE_PREFIX", "omsuite_")
     DATA_DIR = Path(os.environ.get("DATA_DIR", str(BASE_DIR / "data")))
 
+    # --- OmInsights (Metabase) - each user saves their own login in Settings ---
+    OMINSIGHTS_URL = os.environ.get("OMINSIGHTS_URL", "https://ominsights.omlogistics.co.in").rstrip("/")
+    OMINSIGHTS_ALLOWED_CARDS = {int(x) for x in os.environ.get("OMINSIGHTS_ALLOWED_CARDS", "546,967").split(",") if x.strip()}
+    OMINSIGHTS_TIMEOUT = int(os.environ.get("OMINSIGHTS_TIMEOUT", "600"))  # big exports can take minutes
+    # Key used to encrypt saved OmInsights passwords. Defaults to a key derived from SECRET_KEY
+    # (so changing SECRET_KEY makes saved passwords unreadable - users just re-enter them).
+    CREDENTIAL_KEY = os.environ.get("CREDENTIAL_KEY", "")
+
     # --- links to other deployments ---
     GR_AUTO_URL = os.environ.get("GR_AUTO_URL", "").strip()
 

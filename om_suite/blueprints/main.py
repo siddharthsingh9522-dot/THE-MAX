@@ -3,6 +3,9 @@ from flask import (Blueprint, abort, current_app, flash, g, jsonify, redirect, r
                    request, send_from_directory, session, url_for)
 from werkzeug.security import check_password_hash, generate_password_hash
 
+import time
+
+from core import insights
 from core.auth import invalidate, login_required, new_pv, store
 from core.modules import BY_ID, can_access, grouped_for
 from core.security import validate_password
@@ -61,8 +64,42 @@ def settings():
                 session["pv"] = pv            # stay logged in here, every other device logs out
                 invalidate(u["id"])
                 flash("Password change ho gaya. Baaki devices se logout ho gaya.", "ok")
+        elif form == "insights":
+            _save_insights()
         return redirect(url_for("main.settings"))
     return render_template("settings.html", u=g.user)
+
+
+def _save_insights():
+    cfg, uid = current_app.config, g.user["id"]
+    if request.form.get("action") == "remove":
+        store().update_user(uid, insights=None)
+        insights.forget(uid)
+        invalidate(uid)
+        flash("OmInsights login hata diya gaya.", "ok")
+        return
+    username = (request.form.get("username") or "").strip()
+    password = request.form.get("password") or ""
+    if not username or not password:
+        flash("OmInsights username aur password dono daalein.", "error")
+        return
+    verified = True
+    try:
+        token = insights.login(cfg["OMINSIGHTS_URL"], username, password, timeout=20)
+        insights.remember_token(uid, token)
+    except insights.InsightsError as e:
+        if e.status in (401, 429):
+            flash(str(e), "error")          # wrong credentials -> do not save
+            return
+        verified = False                     # server cannot reach OmInsights: save anyway, warn
+        insights.forget(uid)
+    store().update_user(uid, insights={"username": username, "password_enc": insights.encrypt(cfg, password),
+                                       "updated": time.time()})
+    invalidate(uid)
+    if verified:
+        flash("OmInsights login verify hokar save ho gaya.", "ok")
+    else:
+        flash("Login save ho gaya, par abhi OmInsights se connect nahi ho paya - verify nahi hua.", "warn")
 
 
 @bp.route("/healthz")

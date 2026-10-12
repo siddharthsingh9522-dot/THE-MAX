@@ -19,4 +19,4 @@ USER appuser
 
 ENV APP_ENV=production PORT=10000 CHROME_BIN=/usr/bin/chromium CHROMEDRIVER=/usr/bin/chromedriver
 EXPOSE 10000
-CMD gunicorn wsgi:app --bind 0.0.0.0:${PORT} --workers 2 --threads 4 --timeout 120
+CMD gunicorn wsgi:app --bind 0.0.0.0:${PORT} --workers 2 --threads 4 --timeout 900

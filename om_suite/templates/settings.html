@@ -18,5 +18,21 @@
     <label class="field">Confirm new password<input type="password" name="confirm" required minlength="8" autocomplete="new-password"></label>
     <button class="btn" type="submit">Update password</button>
   </form>
+  <div class="card" style="grid-column:1/-1">
+    <h3 style="margin-bottom:.4rem">OmInsights login</h3>
+    <p class="muted small" style="margin:0 0 .9rem">Paid/ToPay ke "Fetch from OmInsights" buttons ke liye. Aapka apna login use hota hai; password encrypted store hota hai aur browser ko kabhi wapas nahi bheja jata. Sirf apna hi login daalein.</p>
+    {% if u.insights and u.insights.username %}
+      <p style="margin:0 0 .9rem"><span class="pill live">Saved</span> &nbsp;<b>{{ u.insights.username }}</b></p>
+    {% endif %}
+    <form method="post" style="display:grid;gap:.2rem;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));align-items:end;max-width:760px">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="form" value="insights">
+      <label class="field">OmInsights username / email<input type="text" name="username" value="{{ u.insights.username if u.insights else '' }}" autocomplete="off" required></label>
+      <label class="field">OmInsights password<input type="password" name="password" autocomplete="new-password" required></label>
+      <div class="row-actions" style="margin-bottom:.9rem">
+        <button class="btn" type="submit" name="action" value="save">{{ 'Replace login' if u.insights and u.insights.username else 'Verify & save' }}</button>
+        {% if u.insights and u.insights.username %}<button class="btn ghost" type="submit" name="action" value="remove" formnovalidate data-confirm="Saved OmInsights login hata dein?">Remove</button>{% endif %}
+      </div>
+    </form>
+  </div>
 </div>
 {% endblock %}

@@ -45,3 +45,13 @@ def admin(app):
     do_signup(c, "Admin", "admin@x.com")
     do_login(c, "admin@x.com")
     return c
+
+
+@pytest.fixture(autouse=True)
+def _reset_global_state():
+    """The login limiter and OmInsights token cache are process-wide; isolate every test."""
+    from core import auth, insights
+    auth.limiter._hits.clear()
+    insights._tokens.clear()
+    auth.invalidate()
+    yield

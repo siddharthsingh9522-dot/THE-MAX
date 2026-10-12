@@ -2146,7 +2146,7 @@
   loadBranchMaster();
 
   /* ---------- Fetch straight from OmInsights (Metabase card 546) ---------- */
-  var METABASE_BASE = 'http://127.0.0.1:5051'; // local proxy — run ominsights_proxy.py first (avoids browser CORS block)
+  var METABASE_BASE = '/paid-topay/insights'; // server-side OmInsights access (uses the logged-in user's own saved OmInsights login)
   var METABASE_CARD_ID = 546;
   var METABASE_PARAM_IDS = {
     verified: '041895d8-8669-4706-8e31-f86180e3c313',
@@ -2215,8 +2215,7 @@
     fetch(METABASE_BASE + '/api/card/' + METABASE_CARD_ID + '/query/json', {
       method: 'POST',
       headers: { 'accept': 'application/json', 'content-type': 'application/json' },
-      credentials: 'omit',
-      mode: 'cors',
+      credentials: 'same-origin',
       body: JSON.stringify(payload)
     })
     .then(function(res){
@@ -2286,7 +2285,7 @@
     })
     .catch(function(err){
       var msg = err && err.message ? err.message : 'Unknown error.';
-      errBox.textContent = "Couldn't fetch: " + msg + " Check that the proxy is running (systemctl --user status ominsights-proxy, or the terminal window if run manually). If it still fails, use the manual Excel export below.";
+      errBox.textContent = "Couldn't fetch: " + msg + " Settings me apna OmInsights login save hai? Agar phir bhi fail ho to neeche manual Excel export use karein.";
       errBox.hidden = false;
       status.textContent = '';
     })
@@ -2369,8 +2368,7 @@
     fetch(METABASE_BASE + '/api/card/' + METABASE_CARD_ID_PAID + '/query/json', {
       method: 'POST',
       headers: { 'accept': 'application/json', 'content-type': 'application/json' },
-      credentials: 'omit',
-      mode: 'cors',
+      credentials: 'same-origin',
       body: JSON.stringify(payload)
     })
     .then(function(res){
@@ -2432,7 +2430,7 @@
     })
     .catch(function(err){
       var msg = err && err.message ? err.message : 'Unknown error.';
-      errBox.textContent = "Couldn't fetch: " + msg + " Check that the proxy is running (systemctl --user status ominsights-proxy, or the terminal window if run manually). If it still fails, use the manual Excel export below.";
+      errBox.textContent = "Couldn't fetch: " + msg + " Settings me apna OmInsights login save hai? Agar phir bhi fail ho to neeche manual Excel export use karein.";
       errBox.hidden = false;
       status.textContent = '';
     })
@@ -2494,7 +2492,7 @@
 
     fetch(METABASE_BASE + '/api/card/' + METABASE_CARD_ID_PAID + '/query/json', {
       method: 'POST', headers: { 'accept': 'application/json', 'content-type': 'application/json' },
-      credentials: 'omit', mode: 'cors', body: JSON.stringify(payload)
+      credentials: 'same-origin', body: JSON.stringify(payload)
     })
     .then(function(res){
       if (!res.ok){
@@ -2533,7 +2531,7 @@
     })
     .catch(function(err){
       var msg = err && err.message ? err.message : 'Unknown error.';
-      errBox.textContent = "PAID fetch failed: " + msg + " Check that the proxy is running, or upload the file manually.";
+      errBox.textContent = "PAID fetch failed: " + msg + " Settings me apna OmInsights login save hai? Ya file manually upload karein.";
       errBox.hidden = false;
       status.textContent = '';
     })
@@ -2572,7 +2570,7 @@
 
     fetch(METABASE_BASE + '/api/card/' + METABASE_CARD_ID + '/query/json', {
       method: 'POST', headers: { 'accept': 'application/json', 'content-type': 'application/json' },
-      credentials: 'omit', mode: 'cors', body: JSON.stringify(payload)
+      credentials: 'same-origin', body: JSON.stringify(payload)
     })
     .then(function(res){
       if (!res.ok){
@@ -2611,7 +2609,7 @@
     })
     .catch(function(err){
       var msg = err && err.message ? err.message : 'Unknown error.';
-      errBox.textContent = "TOPAY fetch failed: " + msg + " Check that the proxy is running, or upload the file manually.";
+      errBox.textContent = "TOPAY fetch failed: " + msg + " Settings me apna OmInsights login save hai? Ya file manually upload karein.";
       errBox.hidden = false;
       status.textContent = '';
     })

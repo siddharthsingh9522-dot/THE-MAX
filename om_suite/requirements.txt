@@ -3,3 +3,4 @@ Werkzeug>=3.0
 gunicorn>=22.0
 firebase-admin>=6.5
 Flask-Compress>=1.14
+cryptography>=42
