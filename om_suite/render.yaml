@@ -10,7 +10,7 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: ADMIN_EMAILS
-        value: ""
+        value: admin@example.com
       - key: FIREBASE_PROJECT_ID
         value: ptp-report
       - key: FIREBASE_SERVICE_ACCOUNT_JSON   # paste the service-account JSON here (one line)
