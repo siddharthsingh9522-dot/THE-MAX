@@ -78,6 +78,18 @@ class Workspace:
     def ms_put(self, key, obj):
         self._save(f"ms_{key}.pkl", obj)
 
+    def blob_get(self, name, default=None):
+        return self._load(f"blob_{name}.pkl", default)
+
+    def blob_put(self, name, obj):
+        self._save(f"blob_{name}.pkl", obj)
+
+    def blob_del(self, name):
+        try:
+            os.remove(self.dir / f"blob_{name}.pkl")
+        except OSError:
+            pass
+
     # ---------------------------------------------------------------- files
     def save_uploads(self, files, subdir="uploads"):
         """Replace the folder with the freshly uploaded .xlsx files; returns saved paths."""

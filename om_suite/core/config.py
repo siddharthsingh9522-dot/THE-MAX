@@ -60,6 +60,13 @@ class Config:
     # (so changing SECRET_KEY makes saved passwords unreadable - users just re-enter them).
     CREDENTIAL_KEY = os.environ.get("CREDENTIAL_KEY", "")
 
+    # --- Thunderbird bridge / mail ---
+    BRIDGE_MASTER = os.environ.get("BRIDGE_MASTER", "")          # defaults to SECRET_KEY if empty
+    PUBLIC_URL = os.environ.get("PUBLIC_URL", "").rstrip("/")     # shown in the extension connection code
+    SMTP_DEFAULT_HOST = os.environ.get("SMTP_DEFAULT_HOST", "mail.omlogistics.co.in")
+    SMTP_DEFAULT_PORT = int(os.environ.get("SMTP_DEFAULT_PORT", "587"))
+    SMTP_DEFAULT_SECURITY = os.environ.get("SMTP_DEFAULT_SECURITY", "starttls")
+
     # --- links to other deployments ---
     GR_AUTO_URL = os.environ.get("GR_AUTO_URL", "").strip()
 

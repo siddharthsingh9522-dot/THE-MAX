@@ -7,7 +7,9 @@ from flask import Flask, g, render_template, request, session, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from blueprints import admin as admin_bp
+from blueprints import bridge_api as bridge_api_bp
 from blueprints import dbp as dbp_bp
+from blueprints import mail as mail_bp
 from blueprints import main as main_bp
 from blueprints import paid_topay as ptp_bp
 from core import auth
@@ -18,7 +20,7 @@ from core.store import build_store
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
-BLUEPRINT_TO_MODULE = {"paid_topay": "paid_topay", "admin": "admin_users"}
+BLUEPRINT_TO_MODULE = {"paid_topay": "paid_topay", "admin": "admin_users", "mail": "mail_center"}
 
 
 def create_app(config_overrides=None, store=None):
@@ -36,6 +38,9 @@ def create_app(config_overrides=None, store=None):
     from dbp import paths as dbp_paths
     from dbp.workspace import purge_old
     dbp_paths.ensure_seeded()
+    from core import bridge_queue
+    bridge_queue.configure(app.config["DATA_DIR"] / "bridge")
+    bridge_queue.purge_old()
     purge_old(app.config["DATA_DIR"])
     if not app.config.get("TESTING"):      # the directory xlsx takes ~8 s to parse: do it once at boot, not on a user's click
         import threading
@@ -56,6 +61,8 @@ def create_app(config_overrides=None, store=None):
     app.register_blueprint(admin_bp.bp)
     app.register_blueprint(ptp_bp.bp)
     app.register_blueprint(dbp_bp.bp)
+    app.register_blueprint(mail_bp.bp)
+    app.register_blueprint(bridge_api_bp.bp)
 
     app.before_request(auth.load_user)
     app.before_request(verify_csrf)

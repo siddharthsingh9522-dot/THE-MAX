@@ -9,6 +9,7 @@ from core import insights
 from core.auth import invalidate, login_required, new_pv, store
 from core.modules import BY_ID, can_access, grouped_for
 from core.security import validate_password
+from dbp import mailcfg
 
 bp = Blueprint("main", __name__)
 
@@ -66,8 +67,33 @@ def settings():
                 flash("Password change ho gaya. Baaki devices se logout ho gaya.", "ok")
         elif form == "insights":
             _save_insights()
+        elif form == "smtp":
+            _save_smtp()
         return redirect(url_for("main.settings"))
-    return render_template("settings.html", u=g.user)
+    return render_template("settings.html", u=g.user, smtp=mailcfg.public_view(current_app.config, g.user))
+
+
+def _save_smtp():
+    cfg_app, uid = current_app.config, g.user["id"]
+    if request.form.get("action") == "remove":
+        store().update_user(uid, smtp=None)
+        invalidate(uid)
+        flash("SMTP settings hata di gayi.", "ok")
+        return
+    cfg, err = mailcfg.build_from_form(cfg_app, request.form, g.user)
+    if err:
+        flash(err, "error")
+        return
+    state, msg = mailcfg.verify(cfg)
+    if state == "rejected":
+        flash(f"SMTP login/sender reject hua - save nahi hua. ({msg})", "error")
+        return
+    store().update_user(uid, smtp=mailcfg.to_record(cfg_app, cfg))
+    invalidate(uid)
+    if state == "ok":
+        flash("SMTP verify hokar save ho gaya.", "ok")
+    else:
+        flash(f"SMTP save ho gaya, par abhi connect nahi ho paya - verify nahi hua. ({msg})", "warn")
 
 
 def _save_insights():

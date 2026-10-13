@@ -19,6 +19,8 @@ def csrf_token() -> str:
 def verify_csrf():
     if request.method in ("GET", "HEAD", "OPTIONS"):
         return
+    if request.path.startswith("/api/bridge/"):      # token-authenticated extension API (no cookies involved)
+        return
     sent = request.form.get("csrf_token") or request.headers.get("X-CSRF-Token", "")
     want = session.get("_csrf", "")
     if not sent or not want or not hmac.compare_digest(sent, want):

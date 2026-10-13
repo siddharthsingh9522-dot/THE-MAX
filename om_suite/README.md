@@ -9,7 +9,7 @@ Ek login, ek design (light, white-blue), mobile par installable (PWA), admin app
 |---|---|---|
 | **1** | Shell, login/signup + admin approval, Users & Access, Settings, Paid/ToPay Suite (saare 7 modes + CN Query + OmInsights fetch), Docker/Render, PWA | **Ready (is zip me)** |
 | **2a** | DBP Report Builder, Validation & Audit, Month-wise Summary (ADR / NET / Full Region), AI Chatbot, Directory & Masters | **Ready** |
-| 2b | Mail Center (branch mails, region auto-mail, full-report mail, SMTP + Thunderbird) | Next |
+| **2b** | Mail Center (branch drafts, region auto-mail, full-report mail) via Thunderbird bridge or SMTP + one merged Thunderbird extension | **Ready** |
 | 3 | TBB Mail, Bill Mail, Branch Finder, Customer Search, OM Automation (CN/GST/Party/Master) | Planned |
 | - | GR Auto Modification: alag app, sirf tile/link (apna login) | Tile ready, `GR_AUTO_URL` set karna hai |
 
@@ -19,7 +19,8 @@ Ek login, ek design (light, white-blue), mobile par installable (PWA), admin app
 pip install -r requirements.txt
 cp .env.example .env        # optional
 python app.py               # http://localhost:5000
-python -m pytest tests      # 123 tests (85 are the original DBP engine tests, unchanged logic)
+pip install -r requirements-dev.txt
+python -m pytest tests      # 153 tests (89 are the original DBP engine tests, unchanged logic)
 ```
 `ADMIN_EMAILS` wala email signup karte hi admin ban jata hai. Agar `ADMIN_EMAILS` khali ho to pehla signup admin banta hai.
 Bina Firebase ke app local SQLite (`data/omsuite.db`) use karta hai - sirf development ke liye.
@@ -53,11 +54,21 @@ Docker image me Chromium bhi hai (GST Query ke liye, Phase 3). Free plan ki RAM 
 
 * Pandas engine `dbp/` Streamlit app se aaya hai - **calculation logic same hai** (original 85 tests ab bhi pass hote hain, `tests/engine/`). Sirf screens naye shell me dobara bani hain.
 * Har user ka apna workspace hota hai (`data/workspaces/<user>/`): upload hui files, generated report, chat history. 7 din purane workspace apne aap delete ho jate hain.
-* **Directory & Masters** (sirf admin): directory aur branch master yahin se update hote hain; galat file upload hui to purani file safe rehti hai. Personal employee-directory workbooks `dbp/masters_seed/` me local rakhein; `.xlsx` seed files Git se excluded hain. First start par available seed files `data/masters/` me copy hote hain. Seed files ke bina bhi app start hota hai; admin Directory & Masters page se authorized workbooks upload kar sakta hai.
-* Render ki disk free plan par har redeploy par reset hoti hai. Persistent data ke liye Render persistent disk lagayein; seed workbooks ko Git me commit na karein.
+* **Directory & Masters** (sirf admin): directory aur branch master yahin se update hote hain; galat file upload hui to purani file safe rehti hai. Bundled copy `dbp/masters_seed/` me hai (first start par `data/masters/` me copy hoti hai). **Is folder me employee directory data hai - repo ko private rakhein.**
+* Render ki disk free plan par har redeploy par reset hoti hai: admin ne jo directory upload ki wo redeploy par seed wali par wapas aa jayegi. Permanent karne ke liye nayi file ko `dbp/masters_seed/` me commit karein (ya Render persistent disk lagayein).
 * `GEMINI_ADMIN_API_KEY` optional hai (chatbot ki wording ke liye). Bina key ke chatbot data se seedha jawab deta hai.
 * Badi Excel files pandas me RAM leti hain; Render free (512 MB) par bahut badi files par memory kam pad sakti hai.
 * Streamlit se jo cheezein nahi layi gayi: "server folder se auto-pick" (web server par meaningless), login page ka video background, month-wise "AI double-check" button.
+
+## Mail Center + Thunderbird (Phase 2b)
+
+* **Mail Center** (sidebar → Communication): *Single Branch Draft* (.eml + data sheet download), *Auto Mail — All Region* (plan → preview → send) aur *Send Full DBP Report*. Test mode default ON; real recipients ko tabhi jati hai jab test mode band karo aur confirm karo.
+* **Bhejne ke 2 tareeke:**
+  1. **Thunderbird (recommended):** mails queue hoti hain aur har user ke apne Thunderbird se jati hain. Server ko mail server tak pahunchne ki zarurat nahi.
+  2. **SMTP:** har user apna SMTP login *Settings → Mail sending* me save karta hai (verify hota hai, password encrypted). Ek baar me max 150 mails; server ko SMTP host reach karna chahiye (`mail.omlogistics.co.in` Render se khulta hai ya nahi, ye pehle Settings me test karke dekhein).
+* **Extension:** `thunderbird_extension/` (v2.0.0) purane dono extensions ("Auto Bill Intelligence Bridge", "OM Report AI Mail Bridge") ki jagah leta hai. Mail Center → *Thunderbird setup* page se zip download + **connection code** milta hai; code extension Options me paste karte hi URL/user/token set ho jata hai. Status page par "Extension connected" dikhta hai.
+* Har user ka token alag hai (HMAC), "Naya code banao" se purana turant band. Jobs aur attachments sirf usi user ko milte hain. Queue SQLite me (`data/bridge/queue.db`) hai - ek hi Render instance ke liye theek hai; redeploy par pending jobs chali jati hain.
+* Permanent install: Thunderbird unsigned extension ko restart par hata deta hai. Signed `.xpi` ke liye extension Mozilla/Thunderbird add-on portal par self-distribution ke liye submit karni hoti hai (steps portal ke developer docs me).
 
 ## Jaan lena zaroori
 
