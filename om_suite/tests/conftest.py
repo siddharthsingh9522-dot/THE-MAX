@@ -15,7 +15,8 @@ PW = "password123"
 @pytest.fixture()
 def app(tmp_path):
     return create_app(
-        {"TESTING": True, "USER_CACHE_TTL": 0, "ADMIN_EMAILS": {"admin@x.com"}, "SECRET_KEY": "test"},
+        {"TESTING": True, "USER_CACHE_TTL": 0, "ADMIN_EMAILS": {"admin@x.com"}, "SECRET_KEY": "test",
+         "DATA_DIR": tmp_path / "data"},
         store=LocalStore(tmp_path / "t.db"),
     )
 

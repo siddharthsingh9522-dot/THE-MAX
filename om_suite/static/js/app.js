@@ -23,6 +23,17 @@
     if (b && !window.confirm(b.getAttribute('data-confirm'))) e.preventDefault();
   });
 
+  // forms with data-busy="message": disable buttons + show the message while the server works
+  document.addEventListener('submit', function (e) {
+    var f = e.target, msg = f.getAttribute && f.getAttribute('data-busy');
+    if (!msg) return;
+    setTimeout(function () {
+      f.querySelectorAll('button').forEach(function (b) { b.disabled = true; });
+      var note = document.createElement('span'); note.className = 'muted small'; note.style.marginLeft = '.7rem'; note.textContent = msg;
+      var last = f.querySelector('button[type=submit]'); if (last && last.parentNode) last.parentNode.appendChild(note);
+    }, 0);
+  });
+
   // auto-hide plain success flashes
   setTimeout(function () {
     document.querySelectorAll('.flash.ok').forEach(function (f) { f.style.display = 'none'; });

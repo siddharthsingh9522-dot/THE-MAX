@@ -1,11 +1,13 @@
 """OM Suite - unified web app (Phase 1: shell, login/admin, Paid/ToPay Suite)."""
 import logging
+import os
 from datetime import datetime, timedelta, timezone
 
 from flask import Flask, g, render_template, request, session, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from blueprints import admin as admin_bp
+from blueprints import dbp as dbp_bp
 from blueprints import main as main_bp
 from blueprints import paid_topay as ptp_bp
 from core import auth
@@ -29,6 +31,17 @@ def create_app(config_overrides=None, store=None):
 
     app.extensions["store"] = store or build_store(_CfgView(app.config))
 
+    # DBP engine: master data (directory / branch master) lives under DATA_DIR and is seeded on first start
+    os.environ["DBP_MASTER_DIR"] = str(app.config["DATA_DIR"] / "masters")
+    from dbp import paths as dbp_paths
+    from dbp.workspace import purge_old
+    dbp_paths.ensure_seeded()
+    purge_old(app.config["DATA_DIR"])
+    if not app.config.get("TESTING"):      # the directory xlsx takes ~8 s to parse: do it once at boot, not on a user's click
+        import threading
+        from dbp import masters as dbp_masters
+        threading.Thread(target=dbp_masters.load, daemon=True, name="warm-masters").start()
+
     try:  # gzip/brotli for the 300 KB tool script
         from flask_compress import Compress
         Compress(app)
@@ -42,6 +55,7 @@ def create_app(config_overrides=None, store=None):
     app.register_blueprint(main_bp.bp)
     app.register_blueprint(admin_bp.bp)
     app.register_blueprint(ptp_bp.bp)
+    app.register_blueprint(dbp_bp.bp)
 
     app.before_request(auth.load_user)
     app.before_request(verify_csrf)
@@ -52,7 +66,7 @@ def create_app(config_overrides=None, store=None):
         pending = 0
         if user and user.get("role") == "admin":
             pending = sum(1 for u in app.extensions["store"].list_users() if u["status"] == "pending")
-        active = BLUEPRINT_TO_MODULE.get(request.blueprint or "")
+        active = getattr(g, "active_module", None) or BLUEPRINT_TO_MODULE.get(request.blueprint or "")
         return dict(
             app_name=app.config["APP_NAME"], app_version=app.config["APP_VERSION"],
             csrf_token=csrf_token, user=user, active_module=active, pending_count=pending,

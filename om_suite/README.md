@@ -8,7 +8,8 @@ Ek login, ek design (light, white-blue), mobile par installable (PWA), admin app
 | Phase | Kya hai | Status |
 |---|---|---|
 | **1** | Shell, login/signup + admin approval, Users & Access, Settings, Paid/ToPay Suite (saare 7 modes + CN Query + OmInsights fetch), Docker/Render, PWA | **Ready (is zip me)** |
-| 2 | DBP Report Builder, Month-wise Summary, AI Chatbot, Validation, Directory, Mail Center + Thunderbird | Planned |
+| **2a** | DBP Report Builder, Validation & Audit, Month-wise Summary (ADR / NET / Full Region), AI Chatbot, Directory & Masters | **Ready** |
+| 2b | Mail Center (branch mails, region auto-mail, full-report mail, SMTP + Thunderbird) | Next |
 | 3 | TBB Mail, Bill Mail, Branch Finder, Customer Search, OM Automation (CN/GST/Party/Master) | Planned |
 | - | GR Auto Modification: alag app, sirf tile/link (apna login) | Tile ready, `GR_AUTO_URL` set karna hai |
 
@@ -18,7 +19,7 @@ Ek login, ek design (light, white-blue), mobile par installable (PWA), admin app
 pip install -r requirements.txt
 cp .env.example .env        # optional
 python app.py               # http://localhost:5000
-python -m pytest tests      # 26 tests
+python -m pytest tests      # 123 tests (85 are the original DBP engine tests, unchanged logic)
 ```
 `ADMIN_EMAILS` wala email signup karte hi admin ban jata hai. Agar `ADMIN_EMAILS` khali ho to pehla signup admin banta hai.
 Bina Firebase ke app local SQLite (`data/omsuite.db`) use karta hai - sirf development ke liye.
@@ -47,6 +48,16 @@ Users collection `omsuite_users`, audit `omsuite_audit` me jate hain (naya data;
 Lambe OmInsights exports ke liye gunicorn timeout 900 s hai (`Dockerfile`). Ek saath max 3 exports chalte hain, baaki ko "busy" milta hai.
 
 Docker image me Chromium bhi hai (GST Query ke liye, Phase 3). Free plan ki RAM kam hai - GST Query chalane ke time `plan: starter` karna padega. Abhi ke liye Chrome nahi chahiye: `--build-arg INSTALL_CHROME=0`.
+
+## DBP tools (Phase 2a)
+
+* Pandas engine `dbp/` Streamlit app se aaya hai - **calculation logic same hai** (original 85 tests ab bhi pass hote hain, `tests/engine/`). Sirf screens naye shell me dobara bani hain.
+* Har user ka apna workspace hota hai (`data/workspaces/<user>/`): upload hui files, generated report, chat history. 7 din purane workspace apne aap delete ho jate hain.
+* **Directory & Masters** (sirf admin): directory aur branch master yahin se update hote hain; galat file upload hui to purani file safe rehti hai. Personal employee-directory workbooks `dbp/masters_seed/` me local rakhein; `.xlsx` seed files Git se excluded hain. First start par available seed files `data/masters/` me copy hote hain. Seed files ke bina bhi app start hota hai; admin Directory & Masters page se authorized workbooks upload kar sakta hai.
+* Render ki disk free plan par har redeploy par reset hoti hai. Persistent data ke liye Render persistent disk lagayein; seed workbooks ko Git me commit na karein.
+* `GEMINI_ADMIN_API_KEY` optional hai (chatbot ki wording ke liye). Bina key ke chatbot data se seedha jawab deta hai.
+* Badi Excel files pandas me RAM leti hain; Render free (512 MB) par bahut badi files par memory kam pad sakti hai.
+* Streamlit se jo cheezein nahi layi gayi: "server folder se auto-pick" (web server par meaningless), login page ka video background, month-wise "AI double-check" button.
 
 ## Jaan lena zaroori
 

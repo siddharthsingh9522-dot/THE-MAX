@@ -70,7 +70,7 @@ def fake():
 def iapp(tmp_path, fake):
     return create_app(
         {"TESTING": True, "USER_CACHE_TTL": 0, "ADMIN_EMAILS": {"admin@x.com"}, "SECRET_KEY": "test",
-         "OMINSIGHTS_URL": fake.url, "OMINSIGHTS_TIMEOUT": 5},
+         "OMINSIGHTS_URL": fake.url, "OMINSIGHTS_TIMEOUT": 5, "DATA_DIR": tmp_path / "data"},
         store=LocalStore(tmp_path / "t.db"))
 
 
