@@ -2,8 +2,8 @@
 (function () {
   function hashMode() { return (location.hash || '').replace('#', '') || 'dashboard'; }
   function highlight(mode) {
-    document.querySelectorAll('[data-ptp-mode]').forEach(function (a) {
-      a.classList.toggle('active', a.getAttribute('data-ptp-mode') === mode);
+    document.querySelectorAll('[data-sub-mode]').forEach(function (a) {
+      a.classList.toggle('active', a.getAttribute('data-sub-mode') === mode);
     });
   }
   function go(mode) {

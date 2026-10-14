@@ -67,6 +67,13 @@ class Config:
     SMTP_DEFAULT_PORT = int(os.environ.get("SMTP_DEFAULT_PORT", "587"))
     SMTP_DEFAULT_SECURITY = os.environ.get("SMTP_DEFAULT_SECURITY", "starttls")
 
+    # --- internal OM portal pages scraped by Branch Finder / Customer Search / OM Automation ---
+    BRANCH_URL = os.environ.get("BRANCH_URL", "http://scmomsanchar.omlogistics.co.in/oracle/query/branch.php")
+    CUSTOMER_PORTAL_USER_ID = os.environ.get("CUSTOMER_PORTAL_USER_ID", "39942")
+    CUSTOMER_URL = os.environ.get(
+        "CUSTOMER_URL", f"https://scmomsanchar.omlogistics.co.in/oracle/query/customer.php?u={CUSTOMER_PORTAL_USER_ID}")
+    CN_API_URL = os.environ.get("CN_API_URL", "https://load.omone.in/utility-service/api/cn-status/{}")
+
     # --- links to other deployments ---
     GR_AUTO_URL = os.environ.get("GR_AUTO_URL", "").strip()
 

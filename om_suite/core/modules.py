@@ -20,6 +20,14 @@ PTP_MODES = [
     ("cnquery", "CN Query Tool"),
 ]
 
+OM_MODES = [
+    ("home", "Overview"),
+    ("cn", "CN Query"),
+    ("gst", "GST Query"),
+    ("party", "Party Code Query"),
+    ("master", "Master (CN → GST)"),
+]
+
 MODULES = [
     dict(id="paid_topay", name="Paid / ToPay Suite", icon="chart", group="Reports", status="live",
          endpoint="paid_topay.index",
@@ -40,11 +48,12 @@ MODULES = [
     dict(id="bill_mail", name="Bill Generated Mail", icon="mail", group="Communication", status="soon", phase=3,
          desc="Branch-wise Auto Generated Freight Bill mail."),
     dict(id="branch_finder", name="Branch Detail Finder", icon="building", group="Lookup & Automation",
-         status="soon", phase=3, desc="Branch code lookup (single + bulk Excel)."),
+         status="live", endpoint="branch.index", desc="Branch code lookup (single + bulk Excel)."),
     dict(id="customer_search", name="Customer Search", icon="search", group="Lookup & Automation",
-         status="soon", phase=3, desc="Customer search (manual + bulk Excel)."),
+         status="live", endpoint="customer.index", desc="Customer search (manual + bulk Excel)."),
     dict(id="om_automation", name="OM Automation", icon="truck", group="Lookup & Automation",
-         status="soon", phase=3, desc="CN / GST / Party Code / Master lookup (GST Query needs Chrome - Docker deploy)."),
+         status="live", endpoint="om.index", desc="CN, GST (captcha), Party Code aur Master (CN → Party → GSTIN) lookups - manual ya Excel batch.",
+         children=OM_MODES),
     dict(id="gr_auto", name="GR Auto Modification", icon="link", group="Other apps", status="external",
          desc="Separate app with its own login - opens in a new tab."),
     dict(id="directory", name="Directory & Masters", icon="book", group="Administration", status="live",

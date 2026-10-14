@@ -37,7 +37,7 @@
           </a>
           {% if m.children and active_module == m.id %}
             {% for mode, label in m.children %}
-              <a class="nav-sub" data-ptp-mode="{{ mode }}" href="{{ url_for(m.endpoint) }}#{{ mode }}">{{ label }}</a>
+              <a class="nav-sub" data-sub-mode="{{ mode }}" href="{{ url_for(m.endpoint) }}#{{ mode }}">{{ label }}</a>
             {% endfor %}
           {% endif %}
         {% endfor %}

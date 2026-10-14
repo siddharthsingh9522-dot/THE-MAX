@@ -10,7 +10,8 @@ Ek login, ek design (light, white-blue), mobile par installable (PWA), admin app
 | **1** | Shell, login/signup + admin approval, Users & Access, Settings, Paid/ToPay Suite (saare 7 modes + CN Query + OmInsights fetch), Docker/Render, PWA | **Ready (is zip me)** |
 | **2a** | DBP Report Builder, Validation & Audit, Month-wise Summary (ADR / NET / Full Region), AI Chatbot, Directory & Masters | **Ready** |
 | **2b** | Mail Center (branch drafts, region auto-mail, full-report mail) via Thunderbird bridge or SMTP + one merged Thunderbird extension | **Ready** |
-| 3 | TBB Mail, Bill Mail, Branch Finder, Customer Search, OM Automation (CN/GST/Party/Master) | Planned |
+| **3a** | Branch Detail Finder, Customer Search, OM Automation (CN / GST captcha / Party / Master) | **Ready** |
+| 3b | TBB Party Mail, Bill Mail, Previous Mail | Next |
 | - | GR Auto Modification: alag app, sirf tile/link (apna login) | Tile ready, `GR_AUTO_URL` set karna hai |
 
 ## Local chalana
@@ -69,6 +70,15 @@ Docker image me Chromium bhi hai (GST Query ke liye, Phase 3). Free plan ki RAM 
 * **Extension:** `thunderbird_extension/` (v2.0.0) purane dono extensions ("Auto Bill Intelligence Bridge", "OM Report AI Mail Bridge") ki jagah leta hai. Mail Center → *Thunderbird setup* page se zip download + **connection code** milta hai; code extension Options me paste karte hi URL/user/token set ho jata hai. Status page par "Extension connected" dikhta hai.
 * Har user ka token alag hai (HMAC), "Naya code banao" se purana turant band. Jobs aur attachments sirf usi user ko milte hain. Queue SQLite me (`data/bridge/queue.db`) hai - ek hi Render instance ke liye theek hai; redeploy par pending jobs chali jati hain.
 * Permanent install: Thunderbird unsigned extension ko restart par hata deta hai. Signed `.xpi` ke liye extension Mozilla/Thunderbird add-on portal par self-distribution ke liye submit karni hoti hai (steps portal ke developer docs me).
+
+## Lookup tools (Phase 3a)
+
+* **Branch Finder / Customer Search / OM Automation** ka scraping logic original apps jaisa hai; sirf UI naye shell me aur background jobs ab per-user private hain (`core/jobs.py`): doosra user aapka job status/download dekh nahi sakta.
+* **Internal portals reach hone chahiye:** ye tools `scmomsanchar.omlogistics.co.in` (branch/customer pages) aur `load.omone.in` (CN API) se data laate hain - server ko ye addresses khulte hone chahiye (OmInsights jaisa hi sawaal). Customer page ka URL me ek portal user id (`CUSTOMER_PORTAL_USER_ID`, default 39942) hai.
+* **GST Query** real headless Chrome chalata hai aur captcha **aapko khud type karna hota hai** (auto-solve nahi). Isme Chrome wala Docker image chahiye; har session ~300 MB RAM leta hai, isliye ek waqt me `GST_MAX_SESSIONS` (default 1) hi chalte hain, idle session 10 minute baad band ho jata hai. Free plan (512 MB) par ye tight hai - `starter` plan lein.
+* **Ek gunicorn worker:** GST browser session, background jobs aur login limiter process ki memory me rehte hain, isliye `Dockerfile` me `--workers 1 --threads 12` hai. Zyada workers karne par GST/jobs "session expired / unknown job" dikhayenge.
+* Jobs 24 ghante baad apne aap delete ho jate hain; redeploy par chal rahe jobs rukk jate hain.
+* "AI SUMMARY" jo CN card par tha wo asal me rule-based text hai (AI nahi) - label ab "SUMMARY" hai.
 
 ## Jaan lena zaroori
 

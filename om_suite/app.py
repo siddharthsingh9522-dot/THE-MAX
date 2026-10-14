@@ -8,8 +8,12 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 from blueprints import admin as admin_bp
 from blueprints import bridge_api as bridge_api_bp
+from blueprints import branch as branch_bp
+from blueprints import customer as customer_bp
 from blueprints import dbp as dbp_bp
+from blueprints import jobs as jobs_bp
 from blueprints import mail as mail_bp
+from blueprints import om as om_bp
 from blueprints import main as main_bp
 from blueprints import paid_topay as ptp_bp
 from core import auth
@@ -38,7 +42,12 @@ def create_app(config_overrides=None, store=None):
     from dbp import paths as dbp_paths
     from dbp.workspace import purge_old
     dbp_paths.ensure_seeded()
-    from core import bridge_queue
+    from core import bridge_queue, jobs as core_jobs
+    import omauto.config as om_config
+    core_jobs.configure(app.config["DATA_DIR"])
+    om_config.configure(app.config["DATA_DIR"])
+    om_config.CN_API = app.config["CN_API_URL"]
+    om_config.CUSTOMER_API = app.config["CUSTOMER_URL"]
     bridge_queue.configure(app.config["DATA_DIR"] / "bridge")
     bridge_queue.purge_old()
     purge_old(app.config["DATA_DIR"])
@@ -62,6 +71,10 @@ def create_app(config_overrides=None, store=None):
     app.register_blueprint(ptp_bp.bp)
     app.register_blueprint(dbp_bp.bp)
     app.register_blueprint(mail_bp.bp)
+    app.register_blueprint(branch_bp.bp)
+    app.register_blueprint(customer_bp.bp)
+    app.register_blueprint(om_bp.bp)
+    app.register_blueprint(jobs_bp.bp)
     app.register_blueprint(bridge_api_bp.bp)
 
     app.before_request(auth.load_user)

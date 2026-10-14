@@ -17,6 +17,6 @@ COPY . .
 RUN useradd -m appuser && mkdir -p /app/data && chown -R appuser /app
 USER appuser
 
-ENV APP_ENV=production PORT=10000 CHROME_BIN=/usr/bin/chromium CHROMEDRIVER=/usr/bin/chromedriver
+ENV APP_ENV=production PORT=10000 CHROME_BIN=/usr/bin/chromium CHROMEDRIVER_PATH=/usr/bin/chromedriver
 EXPOSE 10000
-CMD gunicorn wsgi:app --bind 0.0.0.0:${PORT} --workers 2 --threads 4 --timeout 900
+CMD gunicorn wsgi:app --bind 0.0.0.0:${PORT} --workers 1 --threads 12 --timeout 900
