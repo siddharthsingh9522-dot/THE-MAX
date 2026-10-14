@@ -29,7 +29,7 @@ var MailCenter = (function () {
     }
     retry.onclick = function () { act('retry'); }; cancel.onclick = function () { act('cancel'); };
     function tick() {
-      fetch(url, { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (d) {
+      fetch(url, { credentials: 'same-origin' }).then(function (r) { if ((r.headers.get('content-type') || '').indexOf('application/json') === -1) throw new Error('page'); return r.json(); }).then(function (d) {
         var total = d.total || 0;
         fill.style.width = (total ? Math.round(100 * d.done / total) : 0) + '%';
         text.textContent = d.done + '/' + total + ' sent • ' + d.error + ' failed • ' + d.pending + ' pending' + (d.cancelled ? ' • ' + d.cancelled + ' cancelled' : '');

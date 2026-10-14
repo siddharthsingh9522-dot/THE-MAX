@@ -1,6 +1,6 @@
 /* Minimal service worker: makes the app installable and caches versioned static assets only.
    Pages (logged-in HTML) are never cached. Static URLs carry ?v=<version>, so cache-first is safe. */
-var CACHE = 'omsuite-static-v1';
+var CACHE = 'omsuite-static-v2';
 self.addEventListener('install', function () { self.skipWaiting(); });
 self.addEventListener('activate', function (e) {
   e.waitUntil(caches.keys().then(function (ks) {

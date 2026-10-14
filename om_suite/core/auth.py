@@ -10,6 +10,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from .modules import can_access
 from .security import RateLimiter, safe_next, validate_password
+from .web import wants_json
 from .store import UserExists, norm_email, user_id_for
 
 bp = Blueprint("auth", __name__)
@@ -69,6 +70,10 @@ def login_required(view):
     @wraps(view)
     def wrapped(*a, **kw):
         if not g.user:
+            if wants_json():          # page scripts expect JSON, never a redirect to the login page
+                from flask import jsonify
+                msg = "Login expire ho gaya - page refresh karke dobara login karein."
+                return jsonify(success=False, ok=False, error=msg, message=msg), 401
             return redirect(url_for("auth.login", next=request.full_path.rstrip("?")))
         return view(*a, **kw)
     return wrapped

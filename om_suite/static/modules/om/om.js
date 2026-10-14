@@ -12,6 +12,18 @@ function escapeHtml(str) {
 
 // ---------------- Routing ----------------
 
+/* Every /om/api answer is JSON. If the server (login/CSRF/proxy) sent an HTML page instead, say so clearly. */
+async function readJson(res) {
+    const type = (res.headers && res.headers.get("content-type")) || "";
+    if (type.indexOf("application/json") === -1) {
+        if (res.redirected || res.status === 401 || res.status === 403) {
+            throw new Error("Login expire ho gaya ya access nahi hai - page refresh karke dobara login karein.");
+        }
+        throw new Error("Server ne data ki jagah page bheja (HTTP " + res.status + "). Ctrl+F5 se page refresh karke dobara try karein.");
+    }
+    return res.json();
+}
+
 function highlightSub(mode) {
     document.querySelectorAll("[data-sub-mode]").forEach(a => {
         a.classList.toggle("active", a.getAttribute("data-sub-mode") === mode);
@@ -138,7 +150,11 @@ function renderManualPanel(key, meta) {
                 body: JSON.stringify({ value })
             });
 
-            const payload = await res.json();
+            const payload = await readJson(res);
+            if (!payload.success && !payload.data && payload.message) {      // server-side problem, not "no data"
+                resultBox.innerHTML = `<div class="result-error">${escapeHtml(payload.message)}</div>`;
+                return;
+            }
             renderResult(resultBox, payload, key);
 
         } catch (err) {
@@ -381,7 +397,7 @@ function renderExcelPanel(key, meta) {
 
         try {
             const res = await fetch(`/om/api/excel/status/${currentJobId}?log_from=${logCount}`);
-            const payload = await res.json();
+            const payload = await readJson(res);
 
             if (!payload.success) {
                 statusLine.textContent = "Error checking status";
@@ -451,7 +467,7 @@ function renderExcelPanel(key, meta) {
                 body: formData
             });
 
-            const payload = await res.json();
+            const payload = await readJson(res);
 
             if (!payload.success) {
                 statusLine.textContent = payload.message || "Failed to start";
@@ -535,7 +551,7 @@ function renderGstManualStart(meta) {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ gstin })
             });
-            const payload = await res.json();
+            const payload = await readJson(res);
 
             if (!payload.success) {
                 hint.innerHTML = `<div class="result-error">${escapeHtml(payload.message || "Could not start.")}</div>`;
@@ -595,7 +611,7 @@ function renderGstExcelStart(meta) {
 
         try {
             const res = await fetch("/om/api/gst/captcha/start_excel", { method: "POST", body: formData });
-            const payload = await res.json();
+            const payload = await readJson(res);
 
             if (!payload.success) {
                 hint.innerHTML = `<div class="result-error">${escapeHtml(payload.message || "Could not start.")}</div>`;
@@ -727,7 +743,7 @@ async function submitGstCaptcha() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ captcha })
         });
-        const payload = await res.json();
+        const payload = await readJson(res);
 
         if (!payload.success) {
             gstLogLine(payload.message || "Error submitting captcha", "fail");
@@ -752,7 +768,7 @@ async function stopGstSession() {
 
     try {
         const res = await fetch("/om/api/gst/captcha/stop", { method: "POST" });
-        const payload = await res.json();
+        const payload = await readJson(res);
         finishGstSession(payload, "Stopped");
     } catch (err) {
         document.getElementById("gst-status-line").textContent = "Network error while stopping.";

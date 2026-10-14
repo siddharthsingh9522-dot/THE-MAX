@@ -4,6 +4,7 @@ import re
 import time
 
 import openpyxl
+from urllib.parse import urlsplit
 import requests
 from bs4 import BeautifulSoup
 from flask import Blueprint, current_app, g, jsonify, render_template, request
@@ -40,7 +41,10 @@ def clean(value):
 def search_customer(session, url, cname="", ccode="", lcode="", blcode="", mcode="", custgst=""):
     payload = {"cname": cname, "ccode": ccode, "lcode": lcode, "blcode": blcode, "mcode": mcode,
                "custgst": custgst, "submit": "Search"}
-    resp = session.post(url, data=payload, headers=HEADERS, timeout=TIMEOUT_SECONDS)
+    parts = urlsplit(url)
+    headers = {**HEADERS, "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+               "Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8", "Origin": f"{parts.scheme}://{parts.netloc}", "Referer": url}
+    resp = session.post(url, data=payload, headers=headers, timeout=TIMEOUT_SECONDS)
     resp.raise_for_status()
     no_data = "no data found" in resp.text.lower()
     table = BeautifulSoup(resp.text, "html.parser").find("table")

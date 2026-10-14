@@ -3,7 +3,7 @@ import logging
 import os
 from datetime import datetime, timedelta, timezone
 
-from flask import Flask, g, render_template, request, session, url_for
+from flask import Flask, g, jsonify, render_template, request, session, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from blueprints import admin as admin_bp
@@ -20,6 +20,7 @@ from core import auth
 from core.config import Config
 from core.modules import BY_ID, can_access, grouped_for
 from core.security import csrf_token, verify_csrf
+from core.web import wants_json
 from core.store import build_store
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -92,7 +93,7 @@ def create_app(config_overrides=None, store=None):
             csrf_token=csrf_token, user=user, active_module=active, pending_count=pending,
             nav_groups=grouped_for(user) if user else [],
             gr_auto_url=app.config["GR_AUTO_URL"],
-            asset=lambda f: url_for("static", filename=f, v=app.config["APP_VERSION"]),
+            asset=lambda f: url_for("static", filename=f, v=_asset_version(app, f)),
         )
 
     @app.after_request
@@ -115,10 +116,32 @@ def create_app(config_overrides=None, store=None):
     ]:
         def handler(e, code=code, title=title, text=text):
             msg = text or getattr(e, "description", "") or ""
+            if wants_json():
+                return jsonify(success=False, ok=False, error=msg or title, message=msg or title), code
             return render_template("error.html", code=code, title=title, message=msg), code
         app.register_error_handler(code, handler)
 
     return app
+
+
+_ASSET_VERSIONS = {}
+
+
+def _asset_version(app, filename):
+    """Short content hash of a static file: any edit changes the URL, so stale cached copies are never reused."""
+    import hashlib
+    path = os.path.join(app.static_folder, filename)
+    try:
+        st = os.stat(path)
+    except OSError:
+        return app.config["APP_VERSION"]
+    sig = (st.st_mtime_ns, st.st_size)
+    hit = _ASSET_VERSIONS.get(path)
+    if not hit or hit[0] != sig:
+        with open(path, "rb") as f:
+            hit = (sig, hashlib.md5(f.read()).hexdigest()[:10])
+        _ASSET_VERSIONS[path] = hit
+    return hit[1]
 
 
 class _CfgView:

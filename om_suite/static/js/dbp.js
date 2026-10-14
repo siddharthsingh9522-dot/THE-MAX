@@ -23,9 +23,12 @@ var DBPChat = (function () {
       busy = true; add(chat, 'user', text, true);
       var wait = add(chat, 'assistant', '…', true);
       fetch(askUrl, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ q: text }) })
-        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+        .then(function (r) {
+          if ((r.headers.get('content-type') || '').indexOf('application/json') === -1) throw new Error('Server ne data ki jagah page bheja (HTTP ' + r.status + ') - Ctrl+F5 se refresh karein.');
+          return r.json().then(function (j) { return { ok: r.ok, j: j }; });
+        })
         .then(function (res) { wait.innerHTML = res.ok ? md(res.j.answer) : '⚠ ' + esc(res.j.error || 'Error'); })
-        .catch(function () { wait.textContent = '⚠ Network error - dobara try karein.'; })
+        .catch(function (e) { wait.textContent = '⚠ ' + (e && e.message ? e.message : 'Network error - dobara try karein.'); })
         .then(function () { busy = false; chat.scrollTop = chat.scrollHeight; });
     }
     form.addEventListener('submit', function (e) { e.preventDefault(); var t = q.value; q.value = ''; ask(t); });

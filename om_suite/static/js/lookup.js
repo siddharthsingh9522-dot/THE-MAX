@@ -1,5 +1,12 @@
 /* Shared UI helpers for Branch Finder / Customer Search: safe tables + background-job progress */
 var Lookup = (function () {
+  function readJson(r) {
+    if (((r.headers && r.headers.get('content-type')) || '').indexOf('application/json') === -1) {
+      return Promise.reject(new Error('Server ne data ki jagah page bheja (HTTP ' + r.status + ') - Ctrl+F5 se refresh karke dobara try karein.'));
+    }
+    return r.json();
+  }
+
   function table(el, columns, rows) {
     el.innerHTML = '';
     var t = document.createElement('table'); t.className = 'tbl dbp';
@@ -24,7 +31,7 @@ var Lookup = (function () {
       fetch('/jobs/' + jobId + '/stop', { method: 'POST', credentials: 'same-origin' });
     };
     function tick() {
-      fetch('/jobs/' + jobId + '/status', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (d) {
+      fetch('/jobs/' + jobId + '/status', { credentials: 'same-origin' }).then(readJson).then(function (d) {
         var pct = d.total ? Math.round(100 * d.current / d.total) : 0;
         box.fill.style.width = pct + '%';
         var extra = Object.keys(box.counters || {}).map(function (k) { return box.counters[k] + ': ' + ((d.extra || {})[k] || 0); }).join(' • ');
@@ -45,7 +52,7 @@ var Lookup = (function () {
   function post(url, body, isJson) {
     return fetch(url, { method: 'POST', credentials: 'same-origin', body: isJson ? JSON.stringify(body) : body,
       headers: isJson ? { 'Content-Type': 'application/json' } : undefined })
-      .then(function (r) { return r.json().then(function (j) { j._status = r.status; return j; }); });
+      .then(function (r) { return readJson(r).then(function (j) { j._status = r.status; return j; }); });
   }
   return { table: table, track: track, post: post };
 })();

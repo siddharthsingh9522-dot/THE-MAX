@@ -48,7 +48,7 @@ class Portal:
                 self.wfile.write(data)
 
             def do_POST(self):
-                form = {k: v[0] for k, v in parse_qs(self.rfile.read(int(self.headers.get("Content-Length", 0))).decode()).items()}
+                form = {k: v[0] for k, v in parse_qs(self.rfile.read(int(self.headers.get("Content-Length", 0))).decode(), keep_blank_values=True).items()}
                 outer.hits.append((self.path, form))
                 if self.path.startswith("/branch"):
                     b = BRANCHES.get(form.get("bcode"))
@@ -333,3 +333,85 @@ def test_pages_render_and_sidebar_lists_om_tools(me):
         assert me.get(path).status_code == 200, path
     html = me.get("/om/").get_data(as_text=True)
     assert 'data-sub-mode="gst"' in html and 'id="pages-data"' in html
+
+
+# ================================================================= regression: "Unexpected token '<'" bug
+def test_api_calls_without_csrf_get_json_not_an_html_page(me):
+    """A stale cached script that forgets the CSRF header used to receive an HTML 400 page -> 'Unexpected token <'."""
+    for url, body in (("/om/api/manual/cn", {"value": "CN001"}), ("/om/api/manual/party", {"value": "C1"}),
+                      ("/customer/api/manual-search", {"ccode": "C1"}), ("/dbp/chatbot/ask", {"q": "hi"})):
+        r = me.post(url, json=body)
+        assert r.status_code == 400 and r.mimetype == "application/json", url
+        assert r.get_json()["success"] is False and "refresh" in r.get_json()["message"]
+
+
+def test_api_calls_when_logged_out_get_json_401_not_a_login_redirect(lapp):
+    anon = lapp.test_client()
+    t = re.search(r'name="csrf_token" value="([^"]+)"', anon.get("/login").get_data(as_text=True)).group(1)
+    for url in ("/om/api/manual/cn", "/customer/api/manual-search", "/branch/lookup"):
+        r = anon.post(url, json={"value": "x"}, headers={"X-CSRF-Token": t})
+        assert r.status_code == 401 and r.mimetype == "application/json" and "login" in r.get_json()["message"].lower(), url
+    assert anon.get("/jobs/abc/status").status_code == 401 and anon.get("/jobs/abc/status").mimetype == "application/json"
+    assert anon.get("/om/").status_code == 302                       # normal pages still redirect to the login page
+
+
+def test_unknown_api_url_and_server_errors_are_json_too(me, monkeypatch):
+    assert me.get("/om/api/nope").mimetype == "application/json"
+    monkeypatch.setitem(__import__("omauto.core.batch_runner", fromlist=["x"]).MANUAL_FETCHERS, "cn",
+                        lambda v: (_ for _ in ()).throw(RuntimeError("boom")))
+    r = api(me, "/om/api/manual/cn", {"value": "CN001"})
+    assert r.status_code == 500 and r.mimetype == "application/json" and "boom" in r.get_json()["message"]
+
+
+def test_static_urls_change_when_a_file_changes(lapp, me):
+    import pathlib
+    html = me.get("/").get_data(as_text=True)
+    v1 = re.search(r"app\.js\?v=([0-9a-f]+)", html).group(1)
+    assert v1 != "1.0.0-phase1" and len(v1) == 10                    # content hash, not a constant
+    f = pathlib.Path(lapp.static_folder) / "js" / "app.js"
+    original = f.read_bytes()
+    try:
+        f.write_bytes(original + b"\n/* edited */\n")
+        v2 = re.search(r"app\.js\?v=([0-9a-f]+)", me.get("/").get_data(as_text=True)).group(1)
+        assert v2 != v1                                              # a new URL -> stale cached copies are bypassed
+    finally:
+        f.write_bytes(original)
+
+
+def test_service_worker_cache_was_rotated(me):
+    assert b"omsuite-static-v2" in me.get("/sw.js").data
+
+
+def test_party_lookup_sends_what_the_browser_sends(me, portal):
+    r = api(me, "/om/api/manual/party", {"value": "C1"}).get_json()
+    assert r["success"]
+    path, form = [h for h in portal.hits if h[0].startswith("/customer")][-1]
+    assert form == {"cname": "", "ccode": "C1", "lcode": "", "blcode": "", "mcode": "", "custgst": "", "submit": "Search"}
+
+
+def test_party_lookup_headers_are_the_portals_not_the_cn_apis(me, portal):
+    seen = {}
+    import socket
+    s = socket.socket(); s.bind(("127.0.0.1", 0)); port = s.getsockname()[1]; s.close()
+
+    class H(BaseHTTPRequestHandler):
+        def log_message(self, *a): pass
+        def do_POST(self):
+            self.rfile.read(int(self.headers.get("Content-Length", 0)))
+            seen.update({k.lower(): v for k, v in self.headers.items()})
+            body = b"<html><title>Login</title>please sign in</html>"
+            self.send_response(200); self.send_header("Content-Type", "text/html"); self.send_header("Content-Length", str(len(body)))
+            self.end_headers(); self.wfile.write(body)
+    srv = HTTPServer(("127.0.0.1", port), H)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    try:
+        import omauto.config as oc
+        oc.CUSTOMER_API = f"http://127.0.0.1:{port}/oracle/query/customer.php?u=39942"
+        r = api(me, "/om/api/manual/party", {"value": "734032"}).get_json()
+    finally:
+        srv.shutdown()
+    assert seen["accept"].startswith("text/html") and seen["referer"] == oc.CUSTOMER_API
+    assert seen["origin"] == f"http://127.0.0.1:{port}" and "omone" not in seen.get("origin", "")
+    assert seen["content-type"] == "application/x-www-form-urlencoded"
+    # a login/error page is reported as such instead of the misleading "Customer Not Found"
+    assert not r["success"] and "expected result page" in r["data"]["Error"] and "Login" in r["data"]["Error"]

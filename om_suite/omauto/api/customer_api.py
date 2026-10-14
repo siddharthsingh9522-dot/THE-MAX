@@ -10,6 +10,7 @@ from omauto import config
 
 import traceback
 import requests
+from urllib.parse import urlsplit
 
 
 class CustomerAPI:
@@ -27,13 +28,25 @@ class CustomerAPI:
             }
 
         try:
+            # Same request the portal's own search form sends (all fields, browser-like headers). The shared
+            # session headers (Accept: json, Origin/Referer = ops.omone.in) belong to the CN API, not this portal.
             payload = {
-                "ccode": str(party_code).strip(),
-                "submit": "Search"
+                "cname": "", "ccode": str(party_code).strip(), "lcode": "", "blcode": "",
+                "mcode": "", "custgst": "", "submit": "Search"
+            }
+            parts = urlsplit(config.CUSTOMER_API)
+            headers = {
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                "Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8",
+                "Cache-Control": "max-age=0",
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Origin": f"{parts.scheme}://{parts.netloc}",
+                "Referer": config.CUSTOMER_API,
+                "Upgrade-Insecure-Requests": "1",
             }
 
             try:
-                response = http.post(config.CUSTOMER_API, data=payload)
+                response = http.post(config.CUSTOMER_API, data=payload, headers=headers)
 
             except requests.exceptions.RequestException as e:
                 return {
@@ -54,9 +67,16 @@ class CustomerAPI:
             table = soup.find("table")
 
             if table is None:
+                if "no data found" in response.text.lower():
+                    msg = "Customer Not Found"
+                else:        # not the portal's result page at all (login page / access blocked / error page)
+                    title = soup.title.get_text(strip=True)[:60] if soup.title else ""
+                    msg = ("Portal ne expected result page nahi diya"
+                           + (f" (page: '{title}')" if title else "")
+                           + " - login/access ya network check karein.")
                 return {
                     "success": False,
-                    "message": "Customer Not Found",
+                    "message": msg,
                     "data": None
                 }
 

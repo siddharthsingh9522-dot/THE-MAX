@@ -78,6 +78,9 @@ Docker image me Chromium bhi hai (GST Query ke liye, Phase 3). Free plan ki RAM 
 * **GST Query** real headless Chrome chalata hai aur captcha **aapko khud type karna hota hai** (auto-solve nahi). Isme Chrome wala Docker image chahiye; har session ~300 MB RAM leta hai, isliye ek waqt me `GST_MAX_SESSIONS` (default 1) hi chalte hain, idle session 10 minute baad band ho jata hai. Free plan (512 MB) par ye tight hai - `starter` plan lein.
 * **Ek gunicorn worker:** GST browser session, background jobs aur login limiter process ki memory me rehte hain, isliye `Dockerfile` me `--workers 1 --threads 12` hai. Zyada workers karne par GST/jobs "session expired / unknown job" dikhayenge.
 * Jobs 24 ghante baad apne aap delete ho jate hain; redeploy par chal rahe jobs rukk jate hain.
+* **Static files ab content-hash se aate hain** (`?v=<hash>`): koi bhi JS/CSS badalne par URL badal jata hai, isliye browser/service-worker ki purani cached script kabhi use nahi hoti. Update ke baad ek baar page refresh (Ctrl+F5) kar lein.
+* **API ke errors hamesha JSON** (`/om/api/…`, `/jobs/…`, `/customer/api/…`, chatbot, mail progress): login expire / CSRF / server error par bhi page ko JSON milta hai aur script saaf message dikhati hai, "Unexpected token <" nahi.
+* Party Code / Customer lookup ab portal ko wahi request bhejta hai jo browser bhejta hai (saari form fields + portal ke Accept/Origin/Referer headers). Pehle CN API ke headers (`Origin: ops.omone.in`) galti se portal ko bhi chale jate the.
 * "AI SUMMARY" jo CN card par tha wo asal me rule-based text hai (AI nahi) - label ab "SUMMARY" hai.
 
 ## Jaan lena zaroori
