@@ -8,9 +8,9 @@ import pandas as pd
 from flask import (Blueprint, Response, abort, current_app, flash, g, jsonify, redirect, render_template,
                    request, send_file, url_for)
 
-from blueprints.bridge_api import user_token
+from blueprints.bridge_api import MAIL_MODULES, user_token
 from core import bridge_queue as bq
-from core.auth import invalidate, module_required, store
+from core.auth import any_module_required, invalidate, module_required, store
 from core.config import BASE_DIR
 from dbp import mail_generator, mail_recipients, mail_sender, mailcfg, masters, services
 from dbp.workspace import Workspace
@@ -283,7 +283,7 @@ def batch_action():
 
 # ====================================================================== Thunderbird setup page
 @bp.route("/bridge")
-@module_required("mail_center")
+@any_module_required(*MAIL_MODULES)
 def bridge():
     base = current_app.config["PUBLIC_URL"] or request.url_root.rstrip("/")
     token = user_token(g.user)
@@ -292,7 +292,7 @@ def bridge():
 
 
 @bp.route("/bridge/regenerate", methods=["POST"])
-@module_required("mail_center")
+@any_module_required(*MAIL_MODULES)
 def bridge_regenerate():
     store().update_user(g.user["id"], bridge_v=int(g.user.get("bridge_v", 1)) + 1)
     invalidate(g.user["id"])
@@ -302,7 +302,7 @@ def bridge_regenerate():
 
 
 @bp.route("/extension.zip")
-@module_required("mail_center")
+@any_module_required(*MAIL_MODULES)
 def extension_zip():
     root = BASE_DIR / "thunderbird_extension"
     if not root.is_dir():

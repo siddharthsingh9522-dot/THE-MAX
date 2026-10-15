@@ -10,7 +10,7 @@ def wants_json() -> bool:
     p = request.path
     if p == "/branch/lookup/download":          # a normal form post that returns a file
         return False
-    if p.startswith(API_PREFIXES):
+    if p.startswith(API_PREFIXES) or "/api/" in p:
         return True
     return (request.is_json or request.headers.get("X-Requested-With") == "fetch"
             or request.accept_mimetypes.best == "application/json")

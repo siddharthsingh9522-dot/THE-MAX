@@ -87,10 +87,10 @@ def build_message(mail: dict, from_addr: str) -> email.message.EmailMessage:
     if mail.get("html_body"):
         msg.add_alternative(mail["html_body"], subtype="html")
     if mail.get("attachment_bytes"):
-        msg.add_attachment(
-            mail["attachment_bytes"], maintype="application",
-            subtype="vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            filename=mail.get("attachment_name") or "pending_data.xlsx")
+        maintype, _, subtype = (mail.get("attachment_type") or
+                                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet").partition("/")
+        msg.add_attachment(mail["attachment_bytes"], maintype=maintype, subtype=subtype,
+                           filename=mail.get("attachment_name") or "pending_data.xlsx")
     return msg
 
 

@@ -11,6 +11,7 @@ from blueprints import bridge_api as bridge_api_bp
 from blueprints import branch as branch_bp
 from blueprints import customer as customer_bp
 from blueprints import dbp as dbp_bp
+from blueprints import flows as flows_bp
 from blueprints import jobs as jobs_bp
 from blueprints import mail as mail_bp
 from blueprints import om as om_bp
@@ -72,6 +73,7 @@ def create_app(config_overrides=None, store=None):
     app.register_blueprint(ptp_bp.bp)
     app.register_blueprint(dbp_bp.bp)
     app.register_blueprint(mail_bp.bp)
+    app.register_blueprint(flows_bp.bp)
     app.register_blueprint(branch_bp.bp)
     app.register_blueprint(customer_bp.bp)
     app.register_blueprint(om_bp.bp)

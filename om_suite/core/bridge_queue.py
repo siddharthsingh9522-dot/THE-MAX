@@ -112,14 +112,16 @@ def enqueue_send(owner, mail: dict, batch: str, identity_email: str = "", bcc_li
     att = None
     if mail.get("attachment_bytes"):
         name = mail.get("attachment_name") or "pending_data.xlsx"
-        aid = add_attachment(owner, name, mail["attachment_bytes"], XLSX)
-        att = {"url": f"/api/bridge/attachment/{aid}", "name": name, "content_type": XLSX}
+        ctype = mail.get("attachment_type") or XLSX
+        aid = add_attachment(owner, name, mail["attachment_bytes"], ctype)
+        att = {"url": f"/api/bridge/attachment/{aid}", "name": name, "content_type": ctype}
     payload = {
         "to": list(mail.get("to_list", [])), "cc": list(mail.get("cc_list", [])),
         "bcc": list(bcc_list if bcc_list is not None else mail.get("bcc_list", [])),
         "subject": mail["subject"], "plain_text": mail["body"], "html": mail.get("html_body") or "",
         "identity_email": identity_email or "", "attachment": att,
         "branch_code": mail.get("branch_code"), "branch_name": mail.get("branch_name"),
+        "ref": mail.get("ref"),            # which workflow row this job belongs to (module + code)
     }
     label = str(mail.get("branch_code") or mail.get("label") or "")
     with _conn() as c:
@@ -186,6 +188,43 @@ def batch_status(owner, batch: str) -> list:
                     "branch_name": p.get("branch_name") or "", "status": r["status"].upper(),
                     "to": ", ".join(to[:6]) + (" ..." if len(to) > 6 else ""),
                     "n_to": len(to), "n_cc": len(p.get("cc", [])), "error": r["error"] or ""})
+    return out
+
+
+def get_job(owner, job_id):
+    """-> dict(id, job_type, status, result, error, payload) of one of THIS user's jobs, or None."""
+    with _conn() as c:
+        r = c.execute("SELECT id,job_type,status,payload,result,error,created,finished FROM jobs WHERE id=? AND owner=?",
+                      (int(job_id), owner)).fetchone()
+    if not r:
+        return None
+    return {"id": r["id"], "job_type": r["job_type"], "status": r["status"].upper(), "error": r["error"] or "",
+            "result": json.loads(r["result"]) if r["result"] else None, "payload": json.loads(r["payload"]),
+            "created": r["created"], "finished": r["finished"]}
+
+
+def job_states(owner, ids) -> dict:
+    """{job id: (status, error)} for several of this user's jobs."""
+    ids = [int(i) for i in ids]
+    if not ids:
+        return {}
+    with _conn() as c:
+        rows = c.execute("SELECT id,status,error FROM jobs WHERE owner=? AND id IN (%s)" % ",".join("?" * len(ids)),
+                         [owner, *ids]).fetchall()
+    return {r["id"]: (r["status"].upper(), r["error"] or "") for r in rows}
+
+
+def recent(owner, limit=40) -> list:
+    with _conn() as c:
+        rows = c.execute("SELECT id,job_type,status,payload,error,created,finished FROM jobs WHERE owner=? ORDER BY id DESC LIMIT ?",
+                         (owner, limit)).fetchall()
+    out = []
+    for r in rows:
+        p = json.loads(r["payload"])
+        out.append({"id": r["id"], "type": r["job_type"], "status": r["status"].upper(), "created": r["created"],
+                    "finished": r["finished"], "error": r["error"] or "",
+                    "to": ", ".join(p.get("to", [])[:4]), "subject": (p.get("subject") or "")[:90],
+                    "ref": p.get("ref") or {}})
     return out
 
 

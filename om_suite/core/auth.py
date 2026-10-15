@@ -101,6 +101,19 @@ def module_required(module_id):
     return deco
 
 
+def any_module_required(*module_ids):
+    """Allow users who may use at least one of the given tools (e.g. every mail tool shares one Thunderbird bridge)."""
+    def deco(view):
+        @wraps(view)
+        @login_required
+        def wrapped(*a, **kw):
+            if not any(can_access(g.user, m) for m in module_ids):
+                abort(403)
+            return view(*a, **kw)
+        return wrapped
+    return deco
+
+
 # ----------------------------------------------------------------------- views
 @bp.route("/login", methods=["GET", "POST"])
 def login():

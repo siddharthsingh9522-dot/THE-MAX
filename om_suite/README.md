@@ -11,7 +11,7 @@ Ek login, ek design (light, white-blue), mobile par installable (PWA), admin app
 | **2a** | DBP Report Builder, Validation & Audit, Month-wise Summary (ADR / NET / Full Region), AI Chatbot, Directory & Masters | **Ready** |
 | **2b** | Mail Center (branch drafts, region auto-mail, full-report mail) via Thunderbird bridge or SMTP + one merged Thunderbird extension | **Ready** |
 | **3a** | Branch Detail Finder, Customer Search, OM Automation (CN / GST captcha / Party / Master) | **Ready** |
-| 3b | TBB Party Mail, Bill Mail, Previous Mail | Next |
+| **3b** | TBB Party Mail, Bill Generated Mail, Previous Mail & Format | **Ready** |
 | - | GR Auto Modification: alag app, sirf tile/link (apna login) | Tile ready, `GR_AUTO_URL` set karna hai |
 
 ## Local chalana
@@ -82,6 +82,19 @@ Docker image me Chromium bhi hai (GST Query ke liye, Phase 3). Free plan ki RAM 
 * **API ke errors hamesha JSON** (`/om/api/…`, `/jobs/…`, `/customer/api/…`, chatbot, mail progress): login expire / CSRF / server error par bhi page ko JSON milta hai aur script saaf message dikhati hai, "Unexpected token <" nahi.
 * Party Code / Customer lookup ab portal ko wahi request bhejta hai jo browser bhejta hai (saari form fields + portal ke Accept/Origin/Referer headers). Pehle CN API ke headers (`Origin: ops.omone.in`) galti se portal ko bhi chale jate the.
 * "AI SUMMARY" jo CN card par tha wo asal me rule-based text hai (AI nahi) - label ab "SUMMARY" hai.
+
+## TBB / Bill / Previous Mail (Phase 3b)
+
+* Teeno tools ek hi engine par chalte hain (`mailflows/`, `blueprints/flows.py`): **upload → preview/review → Confirm → send**. Original rules same hain: naya/badla content = fresh DRAFT, **same content dobara upload karne par SENT mail kabhi dobara nahi jati**, Confirm par tick wale DRAFT → QUEUED aur baaki → SKIPPED (kabhi nahi bheji jaati), FAILED rows retry ho sakti hain.
+* **Recipients** company directory se aate hain - wahi file jo admin *Directory & Masters* me rakhta hai (alag directory upload ki zarurat nahi).
+* **Test mode (naya, default ON):** mails sirf aapke test address par jati hain, rows ka status nahi badalta, isliye baad me asli send ho sakta hai.
+* **"Reviewed" gate:** "Send all" sirf QUEUED + reviewed rows bhejta hai. Original me ye gate AI check se khulta tha; ab AI na ho to aap row check karke **✔ Reviewed** (ya "Mark all with email as Reviewed") dabate ho. AI check/AI Fix (typo-domain sudhaar + directory se email) optional hai; AI ke liye server par `GEMINI_ADMIN_API_KEY` set karein (per-user AI keys port nahi ki gayi).
+* **Thunderbird se bhejna:** row pehle SENDING hoti hai, extension ka result aane par apne aap SENT/FAILED ho jati hai (page har 5 sec me refresh karta hai). **SMTP** me turant SENT/FAILED; IMAP "Sent folder copy" wali feature port nahi ki (Thunderbird se bhejne par Sent folder me copy apne aap aati hai). SMTP/Thunderbird dono ke liye `Settings` aur *Thunderbird setup* wahi hain jo Mail Center ke hain.
+* **Previous Mail & Format:** purani mail (.eml ya manual) + naya data sheet → template (`{{Column}}` placeholders; AI ho to wo banata hai, warna aap) → group by column → har group ek mail. 🔎 button Thunderbird ke Sent folder me purani mail dhoond kar To/CC/BCC suggest karta hai (extension ka "match" feature).
+* **Bill / Previous** ki attachment CSV hai, **TBB** ki xlsx. (Original me Bill ki SMTP mail bina attachment thi; ab dono tareeko me CSV jaati hai.)
+* **History page:** `Mail/…/history` me aapke Thunderbird bridge ki recent jobs (sirf aapki).
+* Naya module `previous_mail` hai: purane users ko admin *Users & Access* me tick karna hoga.
+* TBB-only / Bill-only users bhi Thunderbird setup page use kar sakte hain (bridge sab mail tools ke liye ek hi hai).
 
 ## Jaan lena zaroori
 
